@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"io"
-	"os"
 	"strconv"
 	"time"
 
@@ -15,11 +13,11 @@ import (
 
 const SecretKey = "secret"
 
-func Register(c *fiber.Ctx) {
+func Register(c *fiber.Ctx) error {
 	var data map[string]string
 
 	if err := c.BodyParser(&data); err != nil {
-		io.WriteString(os.Stderr, err.Error())
+		return err
 	}
 
 	password, _ := bcrypt.GenerateFromPassword([]byte(data["password"]), 14)
@@ -32,15 +30,14 @@ func Register(c *fiber.Ctx) {
 
 	database.DB.Create(&user)
 
-	c.JSON(user)
-
+	return c.JSON(user)
 }
 
-func Login(c *fiber.Ctx) {
+func Login(c *fiber.Ctx) error {
 	var data map[string]string
 
 	if err := c.BodyParser(&data); err != nil {
-		io.WriteString(os.Stderr, err.Error())
+		return err
 	}
 
 	var user models.User
@@ -49,18 +46,16 @@ func Login(c *fiber.Ctx) {
 
 	if user.Id == 0 {
 		c.Status(fiber.StatusNotFound)
-		c.JSON(fiber.Map{
+		return c.JSON(fiber.Map{
 			"message": "user not found",
 		})
-		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword(user.Password, []byte(data["password"])); err != nil {
 		c.Status(fiber.StatusBadRequest)
-		c.JSON(fiber.Map{
+		return c.JSON(fiber.Map{
 			"message": "incorrect password",
 		})
-		return
 	}
 
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
@@ -72,10 +67,9 @@ func Login(c *fiber.Ctx) {
 
 	if err != nil {
 		c.Status(fiber.StatusInternalServerError)
-		c.JSON(fiber.Map{
+		return c.JSON(fiber.Map{
 			"message": "Could not log in",
 		})
-		return
 	}
 
 	cookie := fiber.Cookie{
@@ -87,7 +81,7 @@ func Login(c *fiber.Ctx) {
 
 	c.Cookie(&cookie)
 
-	c.JSON(fiber.Map{
+	return c.JSON(fiber.Map{
 		"message": "success",
 	})
 }
