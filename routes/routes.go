@@ -2,7 +2,7 @@ package routes
 
 import (
 	"github.com/carlosmoran97/go-auth/controllers"
-	"github.com/gofiber/fiber"
+	"github.com/gofiber/fiber/v2"
 )
 
 func Setup(app *fiber.App) {
